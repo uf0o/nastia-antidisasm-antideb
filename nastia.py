@@ -14,7 +14,7 @@ import signal
 
 current_dir = os.getcwd()
 parser = optparse.OptionParser()
-delay = 0.4
+delay = 0.1 # allows some time for systems read and writes
 
 parser.add_option('-v', '--verbose',
                   dest='verbose',
@@ -66,13 +66,12 @@ def check_output():
 		b = subprocess.Popen(fuzzed_bin, stdout=f2, cwd=current_dir,preexec_fn=os.setsid)
 		time.sleep(delay)
 		os.killpg(os.getpgid(b.pid), signal.SIGTERM)
-	print(filecmp.cmp('out-original', 'out-fuzzed',shallow=False))
 	return(filecmp.cmp('out-original', 'out-fuzzed',shallow=False))
 
 # check if gdb works with the fuzzed binary
 def check_gdb():
-	cmd1 = "echo disassemble main | gdb " + fuzzed_bin +    " > fuzz_gdb"
-	cmd2 = "echo disassemble main | gdb " + original_bin + " > orig_gdb"
+	cmd1 = "echo disassemble main | gdb -q " + fuzzed_bin +    " | grep -v 'symbols' > fuzz_gdb"
+	cmd2 = "echo disassemble main | gdb -q " + original_bin +  " | grep -v 'symbols' > orig_gdb"
 	subprocess.Popen([cmd1],shell=True)
 	time.sleep(delay)
 	subprocess.Popen([cmd2],shell=True)
@@ -83,14 +82,21 @@ def check_gdb():
 def check_radare():
 	cmd1 = "echo -e 'aaa\ns sym.main\npdf' | radare2 " + fuzzed_bin + " > fuzz_radare"
 	cmd2 =  "echo -e 'aaa\ns sym.main\npdf' | radare2 " + original_bin + " > orig_radare"
-	subprocess.Popen([cmd1],shell=True)
-	subprocess.Popen([cmd2],shell=True)
+	subprocess.Popen([cmd1],shell=False)
+	subprocess.Popen([cmd2],shell=False)
 	time.sleep(0.1)
 	return(filecmp.cmp('orig_radare', 'fuzz_radare',shallow=False))
 
+#loop until find a non assembly output in GDB
 while True:
 	copy_binary(original_bin, fuzzed_name)
 	if check_output() and not check_gdb():
-		print ("FOUND POSSIBLE FAIL\n\n\n")
-		os.system("tail fuzz_gdb")
-		input()
+		cmd_gdb = "tail fuzz_gdb"
+		gdb_tail = subprocess.Popen([cmd_gdb],shell=True,stdout=subprocess.PIPE)
+		time.sleep(delay)
+		output = str(gdb_tail.stdout.read())
+		if not "0x00000" in output :
+			print("\n\n ### NON DISRUPTIVE BYTE SWAPPING FOUND! #### !\n\n - \n break the program and test the fuzzed binary manually\n")
+			input()
+		else:
+			continue
