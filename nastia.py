@@ -1,8 +1,8 @@
-# TO DO: verify gdb output and skip if tail fuzz_gdb has assembly lines in it....so 
-# - convert to python3
-# convert to popenprocess instaed of system
+#!/usr/bin/env python3
+
 
 # this program flips a random byte in the binary and verify that both gdb and radare2 are no longer able to load symbols
+# TO DO: verify gdb output and skip if tail fuzz_gdb has assembly lines in it....so 
 import optparse
 import random
 import os
@@ -10,9 +10,11 @@ import sys
 import subprocess
 import filecmp
 import time
+import signal
 
 current_dir = os.getcwd()
 parser = optparse.OptionParser()
+delay = 0.4
 
 parser.add_option('-v', '--verbose',
                   dest='verbose',
@@ -34,9 +36,9 @@ if not options.binary:
 	sys.exit()
 
 # copies the target binary to a temp fuzzing version
-original_bin = options.binary
+original_bin = current_dir+str("/"+options.binary)
+fuzzed_bin   = current_dir+str("/"+options.binary+"fuzz")
 fuzzed_name  = original_bin+"fuzz"
-fuzzed_bin   = current_dir+str(original_bin+"fuzz")
 
 print("original filename is {0}".format(original_bin))
 print("fuzzed filename is {0}".format(original_bin+"fuzz"))
@@ -51,16 +53,20 @@ def flip_byte(in_bytes):
 
 # open the original binary and the fuzzing one
 def copy_binary(file1, file2):
-	with open(file1, "rb") as orig_f, open(file2, "wb") as new_f:
+	with open(file1, "rb") as orig_f, open(file2, "wb+") as new_f:
 		new_f.write(flip_byte(orig_f.read()))
 
-# check binaries outputs 
+# check binaries output
 def check_output():
 	with open('out-original', 'w+') as f1:
-		subprocess.Popen(original_bin, stdout=f1,cwd=current_dir)
+		a = subprocess.Popen(original_bin, stdout=f1,cwd=current_dir,preexec_fn=os.setsid)
+		time.sleep(delay)
+		os.killpg(os.getpgid(a.pid), signal.SIGTERM)
 	with open('out-fuzzed', 'w+') as f2:
-		subprocess.Popen(fuzzed_bin, stdout=f2, cwd=current_dir)
-	time.sleep(0.1)
+		b = subprocess.Popen(fuzzed_bin, stdout=f2, cwd=current_dir,preexec_fn=os.setsid)
+		time.sleep(delay)
+		os.killpg(os.getpgid(b.pid), signal.SIGTERM)
+	print(filecmp.cmp('out-original', 'out-fuzzed',shallow=False))
 	return(filecmp.cmp('out-original', 'out-fuzzed',shallow=False))
 
 # check if gdb works with the fuzzed binary
@@ -68,8 +74,9 @@ def check_gdb():
 	cmd1 = "echo disassemble main | gdb " + fuzzed_bin +    " > fuzz_gdb"
 	cmd2 = "echo disassemble main | gdb " + original_bin + " > orig_gdb"
 	subprocess.Popen([cmd1],shell=True)
+	time.sleep(delay)
 	subprocess.Popen([cmd2],shell=True)
-	time.sleep(0.1)
+	time.sleep(delay)
 	return(filecmp.cmp('orig_gdb', 'fuzz_gdb',shallow=False))
 
 # check if radare works with the fuzzed binary
@@ -83,7 +90,7 @@ def check_radare():
 
 while True:
 	copy_binary(original_bin, fuzzed_name)
-	if check_output() and not check_gdb() and not check_radare():
-		print("FOUND POSSIBLE FAIL\n\n\n")
+	if check_output() and not check_gdb():
+		print ("FOUND POSSIBLE FAIL\n\n\n")
 		os.system("tail fuzz_gdb")
 		input()
