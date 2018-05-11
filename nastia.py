@@ -1,8 +1,4 @@
 #!/usr/bin/env python3
-
-
-# this program flips a random byte in the binary and verify that both gdb and radare2 are no longer able to load symbols
-# TO DO: verify gdb output and skip if tail fuzz_gdb has assembly lines in it....so 
 import optparse
 import random
 import os
