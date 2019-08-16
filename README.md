@@ -1,5 +1,5 @@
-# nastia_antidebugger
-A tiny but effective ELF antidebugger
+# nastia_antidisasm
+A tiny but effective ELF anti-disassembler
 
 | inspired by the original work from 'liveoverflow'|
 
