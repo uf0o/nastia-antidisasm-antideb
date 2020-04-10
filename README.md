@@ -1,5 +1,13 @@
-# nastia_antidisasm
-A tiny but effective ELF anti-disassembler
+# nastia antidisasm/antidebug techniques
+
+## nastia_antideb - A portable x64 universal antidebugger
+
+What it does:
+- Enable the Trap Flag for x64 processes 
+- Take decision based on debugger presence.
+- Template for x64 + intergrate MASM
+ 
+## nastia_antidis - A tiny but effective ELF anti-disassembler
 
 | inspired by the original work from 'liveoverflow'|
 
