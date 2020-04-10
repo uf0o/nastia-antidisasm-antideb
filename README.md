@@ -1,6 +1,6 @@
 # nastia antidisasm/antidebug techniques
 
-## nastia_antideb - A portable x64 universal antidebugger
+## nastia_antideb - A portable windows x64 universal antidebugger
 
 What it does:
 - Enable the Trap Flag for x64 processes 
