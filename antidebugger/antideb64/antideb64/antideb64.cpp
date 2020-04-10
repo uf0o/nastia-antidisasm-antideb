@@ -11,7 +11,7 @@ extern "C"
 
 int main(int argc, char* argv[])
 {
-    system("PAUSE");
+    system("PAUSE"); // you can attach the debugger here
     BOOL bExceptionHit = FALSE;
     __try
     {
@@ -22,9 +22,11 @@ int main(int argc, char* argv[])
         bExceptionHit = TRUE;
 
     }
-    if (bExceptionHit == FALSE)
-        printf("A debugger is present!\n");
-    else
-        printf("No debugger is present!\n");
 
+    if (bExceptionHit == FALSE)
+        printf("A debugger is attached!\n");
+    else
+        printf("No debugger detected\n"); // no debugger present, we can continue building the remaining logic here
+ 
+    return 0;
 }

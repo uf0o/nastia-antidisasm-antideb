@@ -1,15 +1,13 @@
-
 _TEXT	SEGMENT
  
 PUBLIC trap_64
  
 trap_64 PROC
-	 pushf
-     xor rax,rax
-     mov rax, 100
-     or [rsp], rax
-     popf
+	 pushfq
+     or qword ptr[rsp], 100h
+     popfq
+     ret
 trap_64 ENDP
  
 _TEXT	ENDS
-END
+END 
